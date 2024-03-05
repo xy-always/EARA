@@ -5,6 +5,7 @@ Code for "EARA: Improving Biomedical Semantic TextualSimilarity with Entity-Alig
 1. tensorflow==1.15.0
 2. sklearn==0.0
 
-## Train
+## Training Example:
 For BIOSESS dataset:
+
 bash run_biosess_entity.sh
