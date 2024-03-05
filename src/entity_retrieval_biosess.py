@@ -705,52 +705,6 @@ def create_model(bert_config, is_training, input_ids, char_ids, input_mask, segm
   aug_loss = model.get_aug_loss()
   # print(aug_loss)
   
-  '''
-  ABCNN BERT
-  '''
-  
-# get the encoded rep from ABCNN
-  with tf.variable_scope('abcnn_embedding'):
-    abcnn_embedding = tf.get_variable("abcnn_embedding", shape=[11, 50],
-                        dtype=tf.float32, initializer=initializers.xavier_initializer())
-    # print(entity_a)
-    # print(entity_b)
-    abcnn_input_a_ids_embed = tf.nn.embedding_lookup(abcnn_embedding,entity_a)
-    abcnn_input_b_ids_embed = tf.nn.embedding_lookup(abcnn_embedding,entity_b)
-    abcnn_input_a_ids_embed = tf.transpose(abcnn_input_a_ids_embed,perm=[0,2,1])
-    abcnn_input_b_ids_embed = tf.transpose(abcnn_input_b_ids_embed,perm=[0,2,1])
-  abcnn_model = ABCNN.ABCNN(abcnn_input_a_ids_embed,abcnn_input_b_ids_embed,labels)
-  encode_rep = abcnn_model.get_encode_rep()
-  # encode_rep = tf.tanh(encode_rep)
-  # print('====='*20)
-  # print(encode_rep)
-  
-
-  '''
-  char model
-  '''
-  ## add character-level-embedding
-  char_ids = tf.reshape(char_ids,shape=[-1,FLAGS.max_word_length])
-  print(char_ids.shape)
-  with tf.variable_scope('char_embedding'):
-      char_embedding = tf.get_variable("char_embedding", shape=[FLAGS.char_vocab_size, FLAGS.char_embed_dim],
-                          dtype=tf.float32, initializer=initializers.xavier_initializer())
-
-      embed_char = tf.nn.embedding_lookup(char_embedding,char_ids)
-  print(embed_char.shape)
-  with tf.variable_scope('char_CNN'):
-      cnn_embed_char = tf.layers.Conv1D(filters=FLAGS.char_embed_dim,kernel_size=3,padding='same',activation='tanh',strides=2)(embed_char)
-      pool_size = char_embedding.get_shape().as_list()[1]
-      print(cnn_embed_char)
-      char_pool = tf.layers.MaxPooling1D(pool_size=pool_size, strides=pool_size, padding='same')(cnn_embed_char)
-      print(char_pool)
-      char_rep = tf.reshape(char_pool,shape=[-1,FLAGS.max_seq_length,FLAGS.char_embed_dim])
-      print(char_rep)
-      char_max_rep = tf.layers.MaxPooling1D(pool_size=FLAGS.max_seq_length, strides=FLAGS.max_seq_length, padding='same')(char_rep)
-      print(char_max_rep)
-      char_avg_rep = tf.layers.AveragePooling1D(pool_size=FLAGS.max_seq_length, strides=FLAGS.max_seq_length, padding='same')(char_rep)
-      print(char_avg_rep)
-
 
   hidden_size = output_layer.shape[-1].value
 
@@ -796,11 +750,11 @@ def create_model(bert_config, is_training, input_ids, char_ids, input_mask, segm
     pred = logits
   #   #loss = tf.losses.huber_loss(labels,logits)
 
-    # loss = tf.losses.mean_squared_error(labels,logits+logits_retrieve)
-    loss = tf.losses.mean_squared_error(labels,logits)
+    loss = tf.losses.mean_squared_error(labels,logits+logits_retrieve)
+    # loss = tf.losses.mean_squared_error(labels,logits)
 
-    # return loss+0.1*aug_loss,pred
-    return loss,pred
+    return loss+0.1*aug_loss,pred
+    # return loss,pred
 
 
 def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate, other_learning_rate,
